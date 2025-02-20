@@ -1,11 +1,10 @@
 class monitor_setup {
 
-  # Install required packages
   package { ['vim', 'curl', 'git']:
     ensure => installed,
   }
 
-  # Create user 'monitor' with specified home and shell
+
   user { 'monitor':
     ensure     => present,
     home       => '/home/monitor',
@@ -13,7 +12,7 @@ class monitor_setup {
     managehome => true,
   }
 
-  # Ensure /home/monitor/scripts directory exists
+  
   file { '/home/monitor/scripts/':
     ensure  => directory,
     owner   => 'monitor',
@@ -21,14 +20,14 @@ class monitor_setup {
     mode    => '0755',
   }
 
-  # Download memory check script from GitHub
+  
   exec { 'download_memory_check':
-    command => 'wget -O /home/monitor/scripts/memory_check https://raw.githubusercontent.com/YOUR_GITHUB_REPO/memory_check.sh',
+    command => 'wget -O /home/monitor/scripts/memory_check https://github.com/LiaBarron/Barron-Screening_2/memory_check.sh',
     creates => '/home/monitor/scripts/memory_check',
     require => File['/home/monitor/scripts/'],
   }
 
-  # Ensure script has execute permissions
+
   file { '/home/monitor/scripts/memory_check':
     ensure  => file,
     owner   => 'monitor',
@@ -37,7 +36,7 @@ class monitor_setup {
     require => Exec['download_memory_check'],
   }
 
-  # Ensure /home/monitor/src directory exists
+  
   file { '/home/monitor/src/':
     ensure  => directory,
     owner   => 'monitor',
@@ -45,7 +44,7 @@ class monitor_setup {
     mode    => '0755',
   }
 
-  # Create symbolic link in /home/monitor/src
+  
   file { '/home/monitor/src/my_memory_check':
     ensure  => link,
     target  => '/home/monitor/scripts/memory_check',
@@ -54,12 +53,35 @@ class monitor_setup {
     require => [ File['/home/monitor/src/'], File['/home/monitor/scripts/memory_check'] ],
   }
 
-  # Add cron job to run script every 10 minutes
+ 
   cron { 'run_memory_check':
     user    => 'monitor',
     command => '/home/monitor/src/my_memory_check',
     minute  => '*/10',
     require => File['/home/monitor/src/my_memory_check'],
+  }
+
+
+  file { '/etc/timezone':
+    ensure  => file,
+    content => "Asia/Manila\n",
+    require => Package['tzdata'],
+  }
+  exec { 'update_timezone':
+    command => 'dpkg-reconfigure -f noninteractive tzdata',
+    refreshonly => true,
+    subscribe => File['/etc/timezone'],
+  }
+
+
+  file { '/etc/hostname':
+    ensure  => file,
+    content => "bpx.server.local\n",
+  }
+  exec { 'update_hostname':
+    command => 'hostname bpx.server.local',
+    refreshonly => true,
+    subscribe => File['/etc/hostname'],
   }
 
 }
